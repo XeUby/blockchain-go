@@ -36,22 +36,25 @@ Tampering with any historical block invalidates the chain due to hash dependenci
 # CLI Usage
 
 ### Reset the blockchain (create a fresh genesis block)
-
 go run . reset
+
 Add a new block
-go run . addblock -data "Send 10 BTC to Alice"
+go run . addblock -data "Send 10 BTC to Walter"
+
 Print the entire blockchain
 go run . printchain
+
 Validate the blockchain
 go run . validate
+
 Show blockchain height
 go run . height
-How It Works
+
 Block Structure
 
 ---
 
-Each block contains:
+## Block Structure. Each block contains:
 
 Timestamp
 Data
@@ -63,7 +66,7 @@ Blocks are cryptographically linked through PrevBlockHash, forming an immutable 
 
 ---
 
-Proof-of-Work
+## Proof-of-Work
 
 Mining is performed by iterating over nonce values until the following condition is satisfied:
 SHA256(block_data) < target
@@ -84,7 +87,7 @@ This guarantees persistence across application restarts.
 
 ---
 
-Project Structure
+## Project Structure
 block.go        → Block definition and serialization
 pow.go          → Proof-of-Work implementation
 blockchain.go   → Core blockchain logic and persistence
@@ -93,7 +96,7 @@ main.go         → Application entry point
 
 ---
 
-Design Goals
+## Design Goals
 
 Demonstrate blockchain immutability
 Emphasize correctness and validation
@@ -106,7 +109,7 @@ No transaction model (data stored as raw payload)
 No peer-to-peer networking
 Educational project, not production-ready
 ---
-Tech Stack
+## Tech Stack
 
 Go
 BoltDB (bbolt)
@@ -114,6 +117,6 @@ SHA-256 (crypto/sha256)
 
 ---
 
-Author
+## Author
 Boris Chugin
 GitHub: https://github.com/XeUby
