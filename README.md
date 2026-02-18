@@ -49,7 +49,7 @@ go run . height
 How It Works
 Block Structure
 
-Each block contains:
+#Each block contains:
 
 Timestamp
 Data
@@ -59,7 +59,7 @@ Nonce
 
 Blocks are cryptographically linked through PrevBlockHash, forming an immutable chain.
 
-Proof-of-Work
+#Proof-of-Work
 
 Mining is performed by iterating over nonce values until the following condition is satisfied:
 SHA256(block_data) < target
@@ -78,7 +78,7 @@ lh → last hash
 
 This guarantees persistence across application restarts.
 
-Project Structure
+#Project Structure
 block.go        → Block definition and serialization
 pow.go          → Proof-of-Work implementation
 blockchain.go   → Core blockchain logic and persistence
@@ -86,7 +86,7 @@ cli.go          → Command-line interface
 main.go         → Application entry point
 
 
-Design Goals
+#Design Goals
 
 Demonstrate blockchain immutability
 Emphasize correctness and validation
@@ -99,12 +99,13 @@ No transaction model (data stored as raw payload)
 No peer-to-peer networking
 Educational project, not production-ready
 
-Tech Stack
+#Tech Stack
 
 Go
 BoltDB (bbolt)
 SHA-256 (crypto/sha256)
-Author
 
+
+#Author
 Boris Chugin
 GitHub: https://github.com/XeUby
