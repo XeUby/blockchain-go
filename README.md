@@ -33,26 +33,18 @@ Tampering with any historical block invalidates the chain due to hash dependenci
 
 ---
 
-## CLI Usage
+# CLI Usage
 
-Reset the blockchain (creates fresh genesis block):
+### Reset the blockchain (create a fresh genesis block)
 
 go run . reset
-
-Add a new block:
-
+Add a new block
 go run . addblock -data "Send 10 BTC to Alice"
-
-Print the blockchain:
-
+Print the entire blockchain
 go run . printchain
-
-Validate the blockchain:
-
+Validate the blockchain
 go run . validate
-
-Show blockchain height:
-
+Show blockchain height
 go run . height
 How It Works
 Block Structure
@@ -60,37 +52,31 @@ Block Structure
 Each block contains:
 
 Timestamp
-
 Data
-
 PrevBlockHash
-
 Hash
-
 Nonce
 
-Blocks are cryptographically linked through PrevBlockHash.
+Blocks are cryptographically linked through PrevBlockHash, forming an immutable chain.
 
 Proof-of-Work
 
-Mining is performed by iterating over nonce values until:
-
+Mining is performed by iterating over nonce values until the following condition is satisfied:
 SHA256(block_data) < target
 
 The target is derived from a difficulty parameter (targetBits).
-Higher difficulty increases expected mining time.
+Increasing difficulty raises the expected mining time.
 
 Persistence Layer
 
 Blocks are stored in BoltDB as:
-
 hash → serialized block
 
-The latest block hash is stored under the key:
+The latest block hash (the chain tip) is stored under the key:
 
-lh → last hash (tip)
+lh → last hash
 
-This ensures persistence across application restarts.
+This guarantees persistence across application restarts.
 
 Project Structure
 block.go        → Block definition and serialization
@@ -98,36 +84,26 @@ pow.go          → Proof-of-Work implementation
 blockchain.go   → Core blockchain logic and persistence
 cli.go          → Command-line interface
 main.go         → Application entry point
+
+
 Design Goals
 
 Demonstrate blockchain immutability
-
 Emphasize correctness and validation
-
-Keep architecture minimal and readable
-
-Avoid external dependencies beyond storage
-
+Keep the architecture minimal and readable
+Avoid unnecessary external dependencies
 Focus on core mechanics rather than networking
-
 Limitations
-
-Single-node (no networking or distributed consensus)
-
-No transaction model (data is stored as raw payload)
-
-No peer-to-peer communication
-
-Educational implementation, not production-ready
+Single-node implementation (no distributed consensus)
+No transaction model (data stored as raw payload)
+No peer-to-peer networking
+Educational project, not production-ready
 
 Tech Stack
 
 Go
-
 BoltDB (bbolt)
-
 SHA-256 (crypto/sha256)
-
 Author
 
 Boris Chugin
