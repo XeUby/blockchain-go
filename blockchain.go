@@ -35,7 +35,6 @@ func NewBlockchain() *Blockchain {
 	err = db.Update(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte(blocksBucket))
 		if b == nil {
-			// DB пустая — создаём bucket и genesis
 			genesis := NewGenesisBlock()
 
 			nb, e := tx.CreateBucket([]byte(blocksBucket))
@@ -134,12 +133,10 @@ func (bc *Blockchain) IsValid() bool {
 			return false
 		}
 
-		// genesis: PrevBlockHash пустой
 		if len(block.PrevBlockHash) == 0 {
 			return true
 		}
 
-		// проверим что prev hash реально существует в DB
 		var prevExists bool
 		_ = bc.db.View(func(tx *bolt.Tx) error {
 			b := tx.Bucket([]byte(blocksBucket))
@@ -150,9 +147,23 @@ func (bc *Blockchain) IsValid() bool {
 			return false
 		}
 
-		// защита от странных циклов
 		if bytes.Equal(block.Hash, block.PrevBlockHash) {
 			return false
 		}
 	}
+}
+
+// Height returns nuber of blocks including genesis.
+func (bc *Blockchain) Height() int {
+	it := bc.Iterator()
+	count := 0
+
+	for {
+		block := it.Next()
+		count++
+		if len(block.PrevBlockHash) == 0 {
+			break
+		}
+	}
+	return count
 }

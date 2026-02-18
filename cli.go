@@ -15,6 +15,8 @@ func (cli *CLI) printUsage() {
 	fmt.Println("  addblock   -data \"BLOCK_DATA\"    Add a block to the blockchain")
 	fmt.Println("  printchain                    Print all the blocks of the blockchain")
 	fmt.Println("  validate                      Validate PoW + links")
+	fmt.Println("  height                        Print number of blocks (including genesis)")
+	fmt.Println("  reset                         Delete DB and create a fresh chain")
 	fmt.Println()
 }
 
@@ -55,12 +57,26 @@ func (cli *CLI) validateChain() {
 	fmt.Println("Chain valid:", cli.bc.IsValid())
 }
 
+func (cli *CLI) height() {
+	fmt.Println("Height:", cli.bc.Height())
+}
+
+func (cli *CLI) reset() {
+	cli.bc.Close()
+	_ = os.Remove(dbFile) // ignore if file doesn't exist
+
+	cli.bc = NewBlockchain()
+	fmt.Println("✅ Reset complete (new genesis created).")
+}
+
 func (cli *CLI) Run() {
 	cli.validateArgs()
 
 	addBlockCmd := flag.NewFlagSet("addblock", flag.ExitOnError)
 	printChainCmd := flag.NewFlagSet("printchain", flag.ExitOnError)
 	validateCmd := flag.NewFlagSet("validate", flag.ExitOnError)
+	heightCmd := flag.NewFlagSet("height", flag.ExitOnError)
+	resetCmd := flag.NewFlagSet("reset", flag.ExitOnError)
 
 	addBlockData := addBlockCmd.String("data", "", "Block data")
 
@@ -71,6 +87,10 @@ func (cli *CLI) Run() {
 		_ = printChainCmd.Parse(os.Args[2:])
 	case "validate":
 		_ = validateCmd.Parse(os.Args[2:])
+	case "height":
+		_ = heightCmd.Parse(os.Args[2:])
+	case "reset":
+		_ = resetCmd.Parse(os.Args[2:])
 	default:
 		cli.printUsage()
 		os.Exit(1)
@@ -91,5 +111,13 @@ func (cli *CLI) Run() {
 
 	if validateCmd.Parsed() {
 		cli.validateChain()
+	}
+
+	if heightCmd.Parsed() {
+		cli.height()
+	}
+
+	if resetCmd.Parsed() {
+		cli.reset()
 	}
 }
