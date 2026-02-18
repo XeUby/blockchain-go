@@ -1,43 +1,134 @@
 # Blockchain in Go
 
-A minimal blockchain implementation written in Go.
+A minimal single-node blockchain implementation written in Go.
 
-This project demonstrates the core concepts behind a blockchain system, including block structure, hashing, Proof-of-Work, persistent storage, and a command-line interface. It is intended as an educational and portfolio project to showcase backend and systems programming skills in Go.
+This project demonstrates the core mechanics behind blockchain systems, including block structure, cryptographic hashing, Proof-of-Work mining, persistent storage, and validation.  
+It is designed as an educational and portfolio project to showcase backend engineering, data integrity principles, and systems-level reasoning in Go.
+
+---
+
+## Overview
+
+The blockchain consists of sequentially linked blocks.  
+Each block:
+
+- Stores arbitrary data
+- References the previous block via its hash
+- Is mined using a Proof-of-Work algorithm
+- Is persisted locally using BoltDB
+
+Tampering with any historical block invalidates the chain due to hash dependencies and PoW verification.
+
+---
 
 ## Features
 
-- Proof-of-Work consensus mechanism using SHA-256
-- Persistent blockchain storage with BoltDB (bbolt)
-- Command-line interface (CLI) for interacting with the blockchain
-- Chain validation to verify block integrity and links
+- SHA-256 based Proof-of-Work consensus mechanism
+- Adjustable difficulty via `targetBits`
+- Persistent storage using BoltDB (bbolt)
+- CLI interface for interaction
+- Full chain validation (hash + PoW + link integrity)
+- Blockchain height inspection
+- Database reset functionality
 
-## Usage
+---
 
-Add a new block to the blockchain:
-```bash
+## CLI Usage
+
+Reset the blockchain (creates fresh genesis block):
+
+go run . reset
+
+Add a new block:
+
 go run . addblock -data "Send 10 BTC to Alice"
-Print all blocks in the blockchain:
+
+Print the blockchain:
 
 go run . printchain
+
 Validate the blockchain:
 
 go run . validate
+
+Show blockchain height:
+
+go run . height
+How It Works
+Block Structure
+
+Each block contains:
+
+Timestamp
+
+Data
+
+PrevBlockHash
+
+Hash
+
+Nonce
+
+Blocks are cryptographically linked through PrevBlockHash.
+
+Proof-of-Work
+
+Mining is performed by iterating over nonce values until:
+
+SHA256(block_data) < target
+
+The target is derived from a difficulty parameter (targetBits).
+Higher difficulty increases expected mining time.
+
+Persistence Layer
+
+Blocks are stored in BoltDB as:
+
+hash → serialized block
+
+The latest block hash is stored under the key:
+
+lh → last hash (tip)
+
+This ensures persistence across application restarts.
+
 Project Structure
-block.go — block definition and serialization logic
+block.go        → Block definition and serialization
+pow.go          → Proof-of-Work implementation
+blockchain.go   → Core blockchain logic and persistence
+cli.go          → Command-line interface
+main.go         → Application entry point
+Design Goals
 
-pow.go — Proof-of-Work implementation
+Demonstrate blockchain immutability
 
-blockchain.go — blockchain core logic and persistent storage
+Emphasize correctness and validation
 
-cli.go — command-line interface commands
+Keep architecture minimal and readable
 
-main.go — application entry point
+Avoid external dependencies beyond storage
+
+Focus on core mechanics rather than networking
+
+Limitations
+
+Single-node (no networking or distributed consensus)
+
+No transaction model (data is stored as raw payload)
+
+No peer-to-peer communication
+
+Educational implementation, not production-ready
 
 Tech Stack
+
 Go
 
 BoltDB (bbolt)
 
+SHA-256 (crypto/sha256)
+
 Author
+
 Boris Chugin
 GitHub: https://github.com/XeUby
