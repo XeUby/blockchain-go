@@ -1,122 +1,149 @@
-# Blockchain in Go
+# Minimal Blockchain in Go
 
-A minimal single-node blockchain implementation written in Go.
+[![Go](https://img.shields.io/badge/Go-1.22+-00ADD8?logo=go&logoColor=white)](https://go.dev)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![bbolt](https://img.shields.io/badge/storage-bbolt-blue)](https://github.com/etcd-io/bbolt)
 
-This project demonstrates the core mechanics behind blockchain systems, including block structure, cryptographic hashing, Proof-of-Work mining, persistent storage, and validation.  
-It is designed as an educational and portfolio project to showcase backend engineering, data integrity principles, and systems-level reasoning in Go.
+A clean, single-node **blockchain implementation** written in pure Go — designed as an educational and portfolio project.
 
----
+Demonstrates core blockchain concepts:
 
-## Overview
+- Cryptographic hashing & immutability  
+- Proof-of-Work (PoW) mining  
+- Persistent storage with BoltDB (bbolt)  
+- Chain validation & integrity checks  
+- Simple but powerful CLI interface  
 
-The blockchain consists of sequentially linked blocks.  
-Each block:
+Perfect for learning blockchain fundamentals, practicing systems programming in Go, and showcasing backend engineering skills during interviews.
 
-- Stores arbitrary data
-- References the previous block via its hash
-- Is mined using a Proof-of-Work algorithm
-- Is persisted locally using BoltDB
+## ✨ Features
 
-Tampering with any historical block invalidates the chain due to hash dependencies and PoW verification.
+- SHA-256 Proof-of-Work with adjustable difficulty  
+- Persistent storage using BoltDB (embedded key-value store)  
+- Full chain integrity validation (hashes + PoW + links)  
+- CLI commands: add block, print chain, validate, height, reset  
+- Genesis block creation on first run or reset  
+- Minimal dependencies (only `bbolt` + standard library)  
+- Clean, layered & well-commented code  
 
----
+## 🚀 Quick Start
 
-## Features
+# Clone and run
+git clone https://github.com/XeUby/blockchain-go.git
+cd blockchain-go
 
-- SHA-256 based Proof-of-Work consensus mechanism
-- Adjustable difficulty via `targetBits`
-- Persistent storage using BoltDB (bbolt)
-- CLI interface for interaction
-- Full chain validation (hash + PoW + link integrity)
-- Blockchain height inspection
-- Database reset functionality
-
----
-
-# CLI Usage
-
-### Reset the blockchain (create a fresh genesis block)
+# Reset database and create genesis block
 go run . reset
 
-Add a new block
+# Add your first block
 go run . addblock -data "Send 10 BTC to Walter"
 
-Print the entire blockchain
+# See the whole chain
 go run . printchain
 
-Validate the blockchain
+# Validate integrity
 go run . validate
 
-Show blockchain height
+# Show current height
 go run . height
+## 📋 CLI Commands
 
-Block Structure
+| Command                              | Description                                      |
+|--------------------------------------|--------------------------------------------------|
+| `go run . reset`                     | Delete DB and create fresh genesis block         |
+| `go run . addblock -data "..."`      | Mine and add a new block with data               |
+| `go run . printchain`                | Print all blocks (from genesis to tip)           |
+| `go run . validate`                  | Check full chain integrity                       |
+| `go run . height`                    | Show current blockchain height                   |
 
----
+## 🔗 Block Structure
 
-## Block Structure. Each block contains:
+Each block contains the following fields:
 
-Timestamp
-Data
-PrevBlockHash
-Hash
-Nonce
+```go
+type Block struct {
+    Timestamp     int64
+    Data          []byte
+    PrevBlockHash []byte
+    Hash          []byte        // SHA-256 hash of the block header
+    Nonce         int64
+}
+```
+- Timestamp — creation time 
+- Data — arbitrary payload (e.g. "Send 10 BTC to Walter")
+- PrevBlockHash — hash of the previous block (links blocks into a chain)
+- Hash — current block's hash (computed during mining)
+- Nonce — value found during Proof-of-Work
 
-Blocks are cryptographically linked through PrevBlockHash, forming an immutable chain.
+Blocks are cryptographically linked: changing any data in a past block invalidates all subsequent blocks.
 
----
+## ⛏️ Proof-of-Work
+The mining process finds a nonce such that:
+textSHA256(PrevBlockHash + Data + Timestamp + Nonce) < Target
 
-## Proof-of-Work
+Target is a very small number derived from the targetBits constant.
+Lower targetBits → smaller target → exponentially harder mining.
+Mining difficulty can be adjusted by changing targetBits in pow.go.
 
-Mining is performed by iterating over nonce values until the following condition is satisfied:
-SHA256(block_data) < target
+This simulates Bitcoin-style Proof-of-Work and demonstrates computational work required for immutability.
+## 💾 Persistence Layer
+Blocks are stored using bbolt (modern, reliable fork of BoltDB):
 
-The target is derived from a difficulty parameter (targetBits).
-Increasing difficulty raises the expected mining time.
+Bucket: "blocks"
+Key = block hash → Value = serialized block (Gob-encoded)
+Special key: "lh" (last hash) → hash of the current chain tip
 
-Persistence Layer
+This design ensures:
 
-Blocks are stored in BoltDB as:
-hash → serialized block
+Fast lookup by hash
+Automatic persistence across restarts
+Atomic updates when adding new blocks
 
-The latest block hash (the chain tip) is stored under the key:
+## 📂 Project Structure
 
-lh → last hash
+```go
+textblockchain-go/
+├── main.go          # Entry point & CLI wiring
+├── cli.go           # Command-line parser and handlers
+├── blockchain.go    # Core blockchain logic + DB operations
+├── block.go         # Block struct + serialization / deserialization
+├── pow.go           # Proof-of-Work mining & validation logic
+├── go.mod           # Module definition
+└── README.md
+```
+All files are kept minimal and focused — easy to read and understand in one sitting.
+## 🎯 Design Goals
 
-This guarantees persistence across application restarts.
+- Clarity first — code is simple, well-commented, and easy to follow
+- Correctness — full chain validation (hashes + PoW + links)
+- Minimalism — only essential dependencies (bbolt + stdlib)
+- Educational value — clearly shows how immutability and consensus basics work
+- Interview/portfolio friendly — compact project that demonstrates systems thinking
 
----
+## ⚠️ Limitations
+This is an educational implementation, not production software:
 
-## Project Structure
-block.go        → Block definition and serialization
-pow.go          → Proof-of-Work implementation
-blockchain.go   → Core blockchain logic and persistence
-cli.go          → Command-line interface
-main.go         → Application entry point
+- Single-node only (no peer-to-peer networking)
+- No real transactions, wallets, signatures or UTXO model
+- No Merkle trees or advanced features
+- No difficulty retargeting algorithm
+- No REST API (only CLI for simplicity)
 
----
+## 🛠 Tech Stack
 
-## Design Goals
+- Go 1.26.0
+- bbolt — embedded, crash-safe key-value store
+- crypto/sha256 — standard library hashing
 
-Demonstrate blockchain immutability
-Emphasize correctness and validation
-Keep the architecture minimal and readable
-Avoid unnecessary external dependencies
-Focus on core mechanics rather than networking
-Limitations
-Single-node implementation (no distributed consensus)
-No transaction model (data stored as raw payload)
-No peer-to-peer networking
-Educational project, not production-ready
----
-## Tech Stack
+## 🚀 Possible Improvements 
 
-Go
-BoltDB (bbolt)
-SHA-256 (crypto/sha256)
+- Implement basic transactions and simple wallet (ECDSA keys)
+- Add Merkle Tree for transaction integrity
+- Introduce P2P networking (e.g. via libp2p or custom TCP)
+- Dynamic difficulty adjustment every N blocks
+- REST/JSON API for easier integration
+- Unit & integration tests (especially chain validation)
+- Docker container + docker-compose
+- Visualization of chain / mining process
 
----
-
-## Author
-Boris Chugin
-GitHub: https://github.com/XeUby
+Built with ❤️ by Boris Chugin
