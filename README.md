@@ -23,7 +23,6 @@ Demonstrates core blockchain concepts:
 - CLI commands: add block, print chain, validate, height, reset  
 - Genesis block creation on first run or reset  
 - Minimal dependencies (only `bbolt` + standard library)  
-- Clean, layered & well-commented code  
 
 ## 🚀 Quick Start
 
