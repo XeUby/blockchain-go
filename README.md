@@ -14,7 +14,6 @@ Demonstrates core blockchain concepts:
 - Chain validation & integrity checks  
 - Simple but powerful CLI interface  
 
-Perfect for learning blockchain fundamentals, practicing systems programming in Go, and showcasing backend engineering skills during interviews.
 
 ## ✨ Features
 
