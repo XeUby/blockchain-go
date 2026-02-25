@@ -36,7 +36,6 @@ func NewBlockchain() *Blockchain {
 		b := tx.Bucket([]byte(blocksBucket))
 		if b == nil {
 			genesis := NewGenesisBlock()
-
 			nb, e := tx.CreateBucket([]byte(blocksBucket))
 			if e != nil {
 				return e
@@ -153,7 +152,6 @@ func (bc *Blockchain) IsValid() bool {
 	}
 }
 
-// Height returns nuber of blocks including genesis.
 func (bc *Blockchain) Height() int {
 	it := bc.Iterator()
 	count := 0

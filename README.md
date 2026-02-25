@@ -23,8 +23,7 @@ Perfect for learning blockchain fundamentals, practicing systems programming in 
 - Full chain integrity validation (hashes + PoW + links)  
 - CLI commands: add block, print chain, validate, height, reset  
 - Genesis block creation on first run or reset  
-- Minimal dependencies (only `bbolt` + standard library)  
-- Clean, layered & well-commented code  
+- Minimal dependencies (only `bbolt` + standard library)   
 
 ## 🚀 Quick Start
 
@@ -65,7 +64,7 @@ type Block struct {
     Timestamp     int64
     Data          []byte
     PrevBlockHash []byte
-    Hash          []byte        // SHA-256 hash of the block header
+    Hash          []byte       
     Nonce         int64
 }
 ```

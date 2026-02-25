@@ -63,7 +63,7 @@ func (cli *CLI) height() {
 
 func (cli *CLI) reset() {
 	cli.bc.Close()
-	_ = os.Remove(dbFile) // ignore if file doesn't exist
+	_ = os.Remove(dbFile)
 
 	cli.bc = NewBlockchain()
 	fmt.Println("✅ Reset complete (new genesis created).")
