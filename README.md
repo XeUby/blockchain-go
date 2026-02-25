@@ -14,7 +14,6 @@ Demonstrates core blockchain concepts:
 - Chain validation & integrity checks  
 - Simple but powerful CLI interface  
 
-Perfect for learning blockchain fundamentals, practicing systems programming in Go, and showcasing backend engineering skills during interviews.
 
 ## ✨ Features
 
@@ -23,7 +22,7 @@ Perfect for learning blockchain fundamentals, practicing systems programming in 
 - Full chain integrity validation (hashes + PoW + links)  
 - CLI commands: add block, print chain, validate, height, reset  
 - Genesis block creation on first run or reset  
-- Minimal dependencies (only `bbolt` + standard library)   
+- Minimal dependencies (only `bbolt` + standard library)  
 
 ## 🚀 Quick Start
 
