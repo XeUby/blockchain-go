@@ -12,24 +12,63 @@ type CLI struct {
 
 func (cli *CLI) printUsage() {
 	fmt.Println("Usage:")
-	fmt.Println("  addblock   -data \"BLOCK_DATA\"    Add a block to the blockchain")
-	fmt.Println("  printchain                    Print all the blocks of the blockchain")
-	fmt.Println("  validate                      Validate PoW + links")
-	fmt.Println("  height                        Print number of blocks (including genesis)")
-	fmt.Println("  reset                         Delete DB and create a fresh chain")
-	fmt.Println()
+	fmt.Println(`  addblock   -data "BLOCK_DATA"     Add a block to the blockchain`)
+	fmt.Println("  printchain                     Print all the blocks of the blockchain")
+	fmt.Println("  validate                       Validate PoW + links")
+	fmt.Println("  height                         Print number of blocks (including genesis)")
+	fmt.Println("  reset                          Delete DB and create a fresh chain")
+	fmt.Println(`  getblock  -hash "BLOCK_HASH"    Print a single block by its hash (hex)`)
 }
 
-func (cli *CLI) validateArgs() {
+func (cli *CLI) Run() {
 	if len(os.Args) < 2 {
 		cli.printUsage()
 		os.Exit(1)
 	}
-}
 
-func (cli *CLI) addBlock(data string) {
-	cli.bc.AddBlock(data)
-	fmt.Println("✅ Block added!")
+	addBlockCmd := flag.NewFlagSet("addblock", flag.ExitOnError)
+	addBlockData := addBlockCmd.String("data", "", "Block data")
+
+	getBlockCmd := flag.NewFlagSet("getblock", flag.ExitOnError)
+	getBlockHash := getBlockCmd.String("hash", "", "Block hash in hex")
+
+	switch os.Args[1] {
+	case "addblock":
+		_ = addBlockCmd.Parse(os.Args[2:])
+		if *addBlockData == "" {
+			cli.printUsage()
+			os.Exit(1)
+		}
+		cli.bc.AddBlock(*addBlockData)
+		fmt.Println("✅ Block added!")
+
+	case "printchain":
+		cli.printChain()
+
+	case "validate":
+		fmt.Printf("Chain valid: %v\n", cli.bc.IsValid())
+
+	case "height":
+		fmt.Printf("Height: %d\n", cli.bc.Height())
+
+	case "reset":
+		cli.bc.Close()
+		ResetBlockchain()
+		cli.bc = NewBlockchain()
+		fmt.Println("✅ Reset complete (new genesis created).")
+
+	case "getblock":
+		_ = getBlockCmd.Parse(os.Args[2:])
+		if *getBlockHash == "" {
+			cli.printUsage()
+			os.Exit(1)
+		}
+		cli.getBlock(*getBlockHash)
+
+	default:
+		cli.printUsage()
+		os.Exit(1)
+	}
 }
 
 func (cli *CLI) printChain() {
@@ -37,15 +76,7 @@ func (cli *CLI) printChain() {
 
 	for {
 		block := it.Next()
-
-		fmt.Printf("Prev. hash: %x\n", block.PrevBlockHash)
-		fmt.Printf("Data: %s\n", block.Data)
-		fmt.Printf("Hash: %x\n", block.Hash)
-		fmt.Printf("Nonce: %d\n", block.Nonce)
-
-		pow := NewProofOfWork(block)
-		fmt.Printf("PoW valid: %v\n", pow.Validate())
-		fmt.Println()
+		printBlock(block)
 
 		if len(block.PrevBlockHash) == 0 {
 			break
@@ -53,71 +84,24 @@ func (cli *CLI) printChain() {
 	}
 }
 
-func (cli *CLI) validateChain() {
-	fmt.Println("Chain valid:", cli.bc.IsValid())
-}
-
-func (cli *CLI) height() {
-	fmt.Println("Height:", cli.bc.Height())
-}
-
-func (cli *CLI) reset() {
-	cli.bc.Close()
-	_ = os.Remove(dbFile)
-
-	cli.bc = NewBlockchain()
-	fmt.Println("✅ Reset complete (new genesis created).")
-}
-
-func (cli *CLI) Run() {
-	cli.validateArgs()
-
-	addBlockCmd := flag.NewFlagSet("addblock", flag.ExitOnError)
-	printChainCmd := flag.NewFlagSet("printchain", flag.ExitOnError)
-	validateCmd := flag.NewFlagSet("validate", flag.ExitOnError)
-	heightCmd := flag.NewFlagSet("height", flag.ExitOnError)
-	resetCmd := flag.NewFlagSet("reset", flag.ExitOnError)
-
-	addBlockData := addBlockCmd.String("data", "", "Block data")
-
-	switch os.Args[1] {
-	case "addblock":
-		_ = addBlockCmd.Parse(os.Args[2:])
-	case "printchain":
-		_ = printChainCmd.Parse(os.Args[2:])
-	case "validate":
-		_ = validateCmd.Parse(os.Args[2:])
-	case "height":
-		_ = heightCmd.Parse(os.Args[2:])
-	case "reset":
-		_ = resetCmd.Parse(os.Args[2:])
-	default:
-		cli.printUsage()
+func (cli *CLI) getBlock(hashHex string) {
+	block, raw, err := cli.bc.GetBlockHex(hashHex)
+	if err != nil {
+		fmt.Printf("❌ %v\n", err)
+		fmt.Printf("hash: %x\n", raw)
 		os.Exit(1)
 	}
 
-	if addBlockCmd.Parsed() {
-		if *addBlockData == "" {
-			fmt.Println("❌ -data is required")
-			addBlockCmd.Usage()
-			os.Exit(1)
-		}
-		cli.addBlock(*addBlockData)
-	}
+	printBlock(block)
+}
 
-	if printChainCmd.Parsed() {
-		cli.printChain()
-	}
+func printBlock(block *Block) {
+	fmt.Printf("Prev. hash: %x\n", block.PrevBlockHash)
+	fmt.Printf("Data: %s\n", block.Data)
+	fmt.Printf("Hash: %x\n", block.Hash)
+	fmt.Printf("Nonce: %d\n", block.Nonce)
 
-	if validateCmd.Parsed() {
-		cli.validateChain()
-	}
-
-	if heightCmd.Parsed() {
-		cli.height()
-	}
-
-	if resetCmd.Parsed() {
-		cli.reset()
-	}
+	pow := NewProofOfWork(block)
+	fmt.Printf("PoW valid: %v\n", pow.Validate())
+	fmt.Println()
 }

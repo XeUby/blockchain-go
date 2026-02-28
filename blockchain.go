@@ -2,8 +2,11 @@ package main
 
 import (
 	"bytes"
+	"encoding/hex"
+	"errors"
 	"fmt"
 	"log"
+	"os"
 
 	bolt "go.etcd.io/bbolt"
 )
@@ -13,6 +16,8 @@ const (
 	blocksBucket = "blocks"
 	lastHashKey  = "lh"
 )
+
+var ErrBlockNotFound = errors.New("block not found")
 
 type Blockchain struct {
 	tip []byte
@@ -25,7 +30,7 @@ type BlockchainIterator struct {
 }
 
 func NewBlockchain() *Blockchain {
-	db, err := bolt.Open(dbFile, 0o600, nil)
+	db, err := bolt.Open(dbFile, 0600, nil)
 	if err != nil {
 		log.Panic(err)
 	}
@@ -35,19 +40,19 @@ func NewBlockchain() *Blockchain {
 	err = db.Update(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte(blocksBucket))
 		if b == nil {
+			// Create bucket + genesis
+			b, err = tx.CreateBucket([]byte(blocksBucket))
+			if err != nil {
+				return err
+			}
+
 			genesis := NewGenesisBlock()
-			nb, e := tx.CreateBucket([]byte(blocksBucket))
-			if e != nil {
-				return e
+			if err := b.Put(genesis.Hash, genesis.Serialize()); err != nil {
+				return err
 			}
-
-			if e := nb.Put(genesis.Hash, genesis.Serialize()); e != nil {
-				return e
+			if err := b.Put([]byte(lastHashKey), genesis.Hash); err != nil {
+				return err
 			}
-			if e := nb.Put([]byte(lastHashKey), genesis.Hash); e != nil {
-				return e
-			}
-
 			tip = genesis.Hash
 		} else {
 			tip = b.Get([]byte(lastHashKey))
@@ -81,9 +86,6 @@ func (bc *Blockchain) AddBlock(data string) {
 
 	err = bc.db.Update(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte(blocksBucket))
-		if b == nil {
-			return fmt.Errorf("bucket %q not found", blocksBucket)
-		}
 
 		if err := b.Put(newBlock.Hash, newBlock.Serialize()); err != nil {
 			return err
@@ -110,6 +112,9 @@ func (it *BlockchainIterator) Next() *Block {
 	err := it.db.View(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte(blocksBucket))
 		encoded := b.Get(it.currentHash)
+		if encoded == nil {
+			return ErrBlockNotFound
+		}
 		block = DeserializeBlock(encoded)
 		return nil
 	})
@@ -121,47 +126,96 @@ func (it *BlockchainIterator) Next() *Block {
 	return block
 }
 
+func (bc *Blockchain) Height() int {
+	it := bc.Iterator()
+	height := 0
+
+	for {
+		block := it.Next()
+		height++
+
+		if len(block.PrevBlockHash) == 0 {
+			break
+		}
+	}
+	return height
+}
+
+// IsValid checks:
+// 1) Each block's PoW is valid
+// 2) Each block correctly references the previous block hash
 func (bc *Blockchain) IsValid() bool {
 	it := bc.Iterator()
 
 	for {
 		block := it.Next()
 
+		// PoW must be valid for current block
 		pow := NewProofOfWork(block)
 		if !pow.Validate() {
 			return false
 		}
 
-		if len(block.PrevBlockHash) == 0 {
-			return true
-		}
-
-		var prevExists bool
-		_ = bc.db.View(func(tx *bolt.Tx) error {
-			b := tx.Bucket([]byte(blocksBucket))
-			prevExists = b.Get(block.PrevBlockHash) != nil
-			return nil
-		})
-		if !prevExists {
-			return false
-		}
-
-		if bytes.Equal(block.Hash, block.PrevBlockHash) {
-			return false
-		}
-	}
-}
-
-func (bc *Blockchain) Height() int {
-	it := bc.Iterator()
-	count := 0
-
-	for {
-		block := it.Next()
-		count++
+		// Genesis has no previous
 		if len(block.PrevBlockHash) == 0 {
 			break
 		}
+
+		// Previous block must exist and its hash must match PrevBlockHash
+		prev, err := bc.GetBlock(block.PrevBlockHash)
+		if err != nil {
+			return false
+		}
+		if !bytes.Equal(prev.Hash, block.PrevBlockHash) {
+			return false
+		}
 	}
-	return count
+	return true
+}
+
+// GetBlock fetches a block by raw hash bytes.
+func (bc *Blockchain) GetBlock(hash []byte) (*Block, error) {
+	var block *Block
+
+	err := bc.db.View(func(tx *bolt.Tx) error {
+		b := tx.Bucket([]byte(blocksBucket))
+		encoded := b.Get(hash)
+		if encoded == nil {
+			return ErrBlockNotFound
+		}
+		block = DeserializeBlock(encoded)
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	return block, nil
+}
+
+// GetBlockHex fetches a block by hex string hash (e.g. "0000abc...").
+// Supports optional "0x" prefix.
+func (bc *Blockchain) GetBlockHex(hashHex string) (*Block, []byte, error) {
+	s := hashHex
+	if len(s) >= 2 && (s[:2] == "0x" || s[:2] == "0X") {
+		s = s[2:]
+	}
+
+	raw, err := hex.DecodeString(s)
+	if err != nil {
+		return nil, nil, fmt.Errorf("invalid hash hex: %w", err)
+	}
+
+	block, err := bc.GetBlock(raw)
+	if err != nil {
+		return nil, raw, err
+	}
+	return block, raw, nil
+}
+
+// Reset deletes DB file and creates a fresh chain with new genesis.
+func ResetBlockchain() {
+	_ = os.Remove(dbFile)
+	// Recreate by calling NewBlockchain once
+	bc := NewBlockchain()
+	bc.Close()
 }
